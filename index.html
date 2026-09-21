@@ -234,8 +234,8 @@
       roomRef.child("messages").push({
         sender: myUser,
         text: text,
-        read: false,
         timestamp: Date.now()
+        read: false,
       });
 
       triggerPushNotification(text);
