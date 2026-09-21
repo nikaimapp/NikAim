@@ -1,1341 +1,4561 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0,
-        maximum-scale=1.0, user-scalable=no">
+<title>NikAim</title>
 
-  <title>Firebase Chat App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    html, body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100vh;
-      height: -webkit-fill-available;
-      overflow: hidden;
-      background-image: url('bg1.jpg');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
 
-    .screen {
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
+html,body{
+  width:100%;
+  height:100%;
+  margin:0;
+  overflow:hidden;
+}
 
-    #setup-screen {
-      background: rgba(255, 255, 255, 0.95);
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
+body{
+  font-family:Inter,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 10%,rgba(124,58,237,.18),transparent 30%),
+    radial-gradient(circle at 90% 90%,rgba(37,99,235,.16),transparent 30%),
+    var(--bg);
+}
 
-    #chat-screen {
-      background: transparent;
-    }
+button,input{font-family:inherit}
+button{border:0;cursor:pointer}
+.hidden{display:none!important}
 
-    .hidden {
-      display: none !important;
-    }
+:root{
+  --bg:#070812;
+  --bg2:#101226;
+  --card:rgba(18,21,42,.88);
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --accent:#8b5cf6;
+  --accent2:#2563eb;
+  --bubble1:#7c3aed;
+  --bubble2:#2563eb;
+  --other:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.11);
+  --green:#22c55e;
+  --cyan:#67e8f9;
+}
 
-    .chat-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      z-index: 10;
-      flex-shrink: 0;
-    }
+body.light{
+  --bg:#f4f6ff;
+  --bg2:#e8ecff;
+  --card:rgba(255,255,255,.92);
+  --text:#111827;
+  --muted:#64748b;
+  --other:#fff;
+  --border:rgba(15,23,42,.10);
+}
 
-    .wp-btn {
-      background: #075e54;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 12px;
-      cursor: pointer;
-    }
+.ambient{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  z-index:0;
+}
 
-    #chat-box {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+.orb{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(75px);
+  opacity:.20;
+}
 
-    .msg {
-      padding: 8px 12px;
-      border-radius: 12px;
-      max-width: 75%;
-      word-break: break-word;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-      font-size: 15px;
-    }
+.orb1{
+  width:230px;
+  height:230px;
+  left:-80px;
+  top:-60px;
+  background:var(--accent);
+}
 
-    .my-msg {
-      background: #dcf8c6;
-      align-self: flex-end;
-      text-align: right;
-    }
+.orb2{
+  width:270px;
+  height:270px;
+  right:-100px;
+  bottom:-100px;
+  background:var(--accent2);
+}
 
-    .other-msg {
-      background: #ffffff;
-      align-self: flex-start;
-      text-align: left;
-    }
+/* LOGIN */
 
-    .tick {
-      font-size: 10px;
-      margin-left: 5px;
-      color: gray;
-    }
+#setup{
+  position:relative;
+  z-index:2;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
 
-    .read {
-      color: #34b7f1;
-      font-weight: bold;
-    }
+.login-card{
+  width:min(430px,100%);
+  padding:30px 24px;
+  border-radius:30px;
+  border:1px solid var(--border);
+  background:var(--card);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
+  box-shadow:0 25px 70px rgba(0,0,0,.35);
+  text-align:center;
+}
 
-    .message-time {
-      font-size: 10px;
-      color: #777;
-      margin-left: 6px;
-      white-space: nowrap;
-      vertical-align: bottom;
-    }
+.logo{
+  width:82px;
+  height:82px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:27px;
+  color:#fff;
+  font:800 40px Poppins;
+  background:linear-gradient(135deg,var(--accent),var(--accent2),#ec4899);
+  box-shadow:0 0 45px rgba(139,92,246,.30);
+}
 
-    #status-bar {
-      font-size: 14px;
-      color: #075e54;
-      font-weight: bold;
-    }
+.title{
+  margin:16px 0 3px;
+  font:800 31px Poppins;
+  background:linear-gradient(90deg,var(--accent),#60a5fa,#ec4899);
+  -webkit-background-clip:text;
+  color:transparent;
+}
 
-    /* TYPING INDICATOR */
-    #typing-indicator {
-      display: none;
-      font-size: 12px;
-      color: #075e54;
-      font-style: italic;
-      padding: 4px 15px;
-      background: rgba(255, 255, 255, 0.88);
-      flex-shrink: 0;
-    }
+.subtitle{
+  color:var(--muted);
+  font-size:12px;
+  margin-bottom:20px;
+}
 
-    #typing-user {
-      font-weight: bold;
-    }
+.identity-preview{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px;
+  margin-bottom:12px;
+  text-align:left;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+}
 
-    .input-container {
-      display: flex;
-      gap: 8px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.95);
-      box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
-      flex-shrink: 0;
-    }
+.preview-avatar{
+  width:50px;
+  height:50px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:16px;
+  color:#fff;
+  font-weight:800;
+  font-size:20px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
 
-    .input-container input {
-      flex: 1;
-      padding: 10px 15px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
-      outline: none;
-      font-size: 15px;
-    }
+.preview-name{font-weight:800}
 
-    .input-container button {
-      padding: 10px 18px;
-      background: #075e54;
-      color: white;
-      border: none;
-      border-radius: 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.preview-status{
+  margin-top:3px;
+  font-size:10px;
+  color:var(--green);
+}
 
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
+.input{
+  width:100%;
+  height:52px;
+  margin-top:10px;
+  padding:0 15px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  outline:0;
+  background:rgba(255,255,255,.05);
+  color:var(--text);
+  font-size:14px;
+}
 
-    .modal-content {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      width: 80%;
-      max-width: 300px;
-      text-align: center;
-    }
+.input:focus{border-color:var(--accent)}
 
-    .wallpaper-options {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin: 15px 0;
-      flex-wrap: wrap;
-    }
+.enter{
+  width:100%;
+  height:54px;
+  margin-top:15px;
+  border-radius:17px;
+  color:#fff;
+  font-weight:800;
+  background:linear-gradient(110deg,var(--accent),var(--accent2),#ec4899);
+}
 
-    .wp-thumb {
-      width: 60px;
-      height: 90px;
-      border-radius: 6px;
-      object-fit: cover;
-      cursor: pointer;
-      border: 2px solid transparent;
-    }
+/* CHAT */
 
-    .wp-thumb:hover {
-      border-color: #25d366;
-    }
-  </style>
+#chat{
+  position:relative;
+  z-index:2;
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+.header{
+  min-height:70px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  border-bottom:1px solid var(--border);
+  background:var(--card);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  z-index:10;
+}
+
+.header-profile{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  flex:1;
+  min-width:0;
+  cursor:pointer;
+}
+
+.header-avatar{
+  width:47px;
+  height:47px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:16px;
+  color:#fff;
+  font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
+
+.header-info{
+  min-width:0;
+  flex:1;
+}
+
+.header-name{
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.status{
+  margin-top:3px;
+  font-size:10px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.status.online{color:var(--green)}
+
+.header-actions{
+  display:flex;
+  gap:5px;
+}
+
+.icon-btn{
+  width:39px;
+  height:39px;
+  border-radius:13px;
+  color:var(--text);
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+}
+
+/* CHAT AREA */
+
+.chat-area{
+  position:relative;
+  flex:1;
+  min-height:0;
+}
+
+#messages{
+  width:100%;
+  height:100%;
+  overflow-y:auto;
+  padding:18px 12px 95px;
+  scroll-behavior:smooth;
+  overscroll-behavior:contain;
+}
+
+#messages::-webkit-scrollbar{width:4px}
+
+#messages::-webkit-scrollbar-thumb{
+  background:var(--border);
+  border-radius:10px;
+}
+
+/* MESSAGE */
+
+.message-row,
+.message-row *,
+.message-bubble{
+  animation:none!important;
+}
+
+.message-row{
+  display:flex;
+  margin:8px 0;
+  opacity:1;
+  transform:none;
+  position:relative;
+}
+
+.message-row.mine{
+  justify-content:flex-end;
+}
+
+.message-bubble{
+  position:relative;
+  max-width:min(78%,390px);
+  padding:9px 11px 7px;
+  border-radius:18px;
+  border:1px solid var(--border);
+  word-break:break-word;
+  user-select:none;
+  touch-action:pan-y;
+  will-change:transform;
+}
+
+.message-row.mine .message-bubble{
+  color:#fff;
+  background:linear-gradient(135deg,var(--bubble1),var(--bubble2));
+  border-bottom-right-radius:5px;
+}
+
+.message-row.other .message-bubble{
+  background:var(--other);
+  border-bottom-left-radius:5px;
+}
+
+.sender{
+  font-size:10px;
+  font-weight:800;
+  opacity:.75;
+  margin-bottom:4px;
+}
+
+.message-text{
+  font-size:14px;
+  line-height:1.48;
+  white-space:pre-wrap;
+}
+
+.message-meta{
+  display:flex;
+  justify-content:flex-end;
+  gap:4px;
+  margin-top:4px;
+  font-size:9px;
+  opacity:.68;
+}
+
+.read-tick{color:#d1d5db}
+.read-tick.read{color:var(--cyan)}
+
+/* MESSAGE REPLY PREVIEW */
+
+.reply-preview{
+  padding:7px 9px;
+  margin-bottom:7px;
+  border-left:3px solid var(--cyan);
+  border-radius:7px;
+  background:rgba(255,255,255,.09);
+  cursor:pointer;
+  overflow:hidden;
+}
+
+.reply-preview-sender{
+  font-size:10px;
+  font-weight:800;
+  color:var(--cyan);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.reply-preview-text{
+  margin-top:2px;
+  font-size:10px;
+  line-height:1.35;
+  opacity:.82;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* REACTION */
+
+.reaction-bar{
+  position:absolute;
+  z-index:100;
+  top:-48px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:3px;
+  padding:5px 7px;
+  border-radius:22px;
+  border:1px solid var(--border);
+  background:var(--card);
+  backdrop-filter:blur(18px);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+
+.reaction-bar button{
+  width:31px;
+  height:31px;
+  border-radius:50%;
+  background:transparent;
+  font-size:18px;
+  color:var(--text);
+}
+
+.reaction-badge{
+  position:absolute;
+  right:-5px;
+  bottom:-12px;
+  padding:2px 6px;
+  border-radius:11px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  font-size:12px;
+  box-shadow:0 4px 15px rgba(0,0,0,.25);
+}
+
+/* REPLY COMPOSER */
+
+.reply-composer{
+  position:absolute;
+  left:9px;
+  right:9px;
+  bottom:68px;
+  z-index:29;
+  padding:8px 9px;
+  border-radius:15px;
+  border:1px solid var(--border);
+  border-left:3px solid var(--cyan);
+  background:var(--card);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:0 8px 25px rgba(0,0,0,.25);
+}
+
+.reply-composer-line{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.reply-composer-content{
+  min-width:0;
+  flex:1;
+}
+
+.reply-composer-sender{
+  font-size:11px;
+  font-weight:800;
+  color:var(--cyan);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.reply-composer-text{
+  margin-top:3px;
+  font-size:11px;
+  color:var(--text);
+  opacity:.82;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.reply-cancel{
+  width:31px;
+  height:31px;
+  flex-shrink:0;
+  border-radius:10px;
+  color:var(--text);
+  background:rgba(255,255,255,.08);
+  font-size:15px;
+}
+
+/* TYPING */
+
+.typing-indicator{
+  position:absolute;
+  left:12px;
+  bottom:67px;
+  z-index:20;
+  padding:7px 11px;
+  border-radius:15px;
+  background:var(--card);
+  border:1px solid var(--border);
+  backdrop-filter:blur(15px);
+  font-size:10px;
+}
+
+.typing-dots span{
+  display:inline-block;
+  animation:typingDot 1s infinite;
+}
+
+.typing-dots span:nth-child(2){
+  animation-delay:.15s;
+}
+
+.typing-dots span:nth-child(3){
+  animation-delay:.30s;
+}
+
+@keyframes typingDot{
+  0%,60%,100%{
+    opacity:.3;
+    transform:translateY(0);
+  }
+  30%{
+    opacity:1;
+    transform:translateY(-3px);
+  }
+}
+
+/* INPUT */
+
+.input-bar{
+  position:absolute;
+  left:9px;
+  right:9px;
+  bottom:9px;
+  display:flex;
+  gap:6px;
+  padding:7px;
+  border-radius:20px;
+  background:var(--card);
+  border:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  z-index:30;
+}
+
+.message-input{
+  flex:1;
+  min-width:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  padding:0 5px;
+  font-size:14px;
+}
+
+.small-btn{
+  width:41px;
+  height:41px;
+  flex-shrink:0;
+  border-radius:14px;
+  color:var(--text);
+  background:rgba(255,255,255,.06);
+}
+
+.send-btn{
+  color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
+
+/* MODALS */
+
+.modal-bg{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:10px;
+  background:rgba(0,0,0,.60);
+  backdrop-filter:blur(7px);
+}
+
+.modal{
+  width:min(520px,100%);
+  max-height:88vh;
+  overflow:auto;
+  padding:20px;
+  border-radius:26px;
+  background:var(--card);
+  border:1px solid var(--border);
+  box-shadow:0 25px 70px rgba(0,0,0,.45);
+}
+
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.modal-title{
+  font:700 19px Poppins;
+}
+
+.close-btn{
+  width:35px;
+  height:35px;
+  border-radius:11px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+}
+
+.section-title{
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin:18px 0 9px;
+}
+
+/* PROFILE */
+
+.profile-top{
+  text-align:center;
+  padding:8px 0 16px;
+}
+
+.profile-avatar{
+  width:82px;
+  height:82px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:27px;
+  color:#fff;
+  font-size:34px;
+  font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2),#ec4899);
+  box-shadow:0 12px 35px rgba(139,92,246,.25);
+}
+
+.profile-name{
+  margin-top:11px;
+  font:800 21px Poppins;
+}
+
+.profile-online{
+  margin-top:3px;
+  color:var(--green);
+  font-size:11px;
+}
+
+.profile-offline{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.mood-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px;
+  border-radius:18px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.mood-big{
+  width:48px;
+  height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:15px;
+  background:rgba(255,255,255,.07);
+  font-size:27px;
+}
+
+.mood-name{
+  font-weight:800;
+  font-size:13px;
+}
+
+.mood-description{
+  color:var(--muted);
+  font-size:9px;
+  margin-top:3px;
+}
+
+/* THEMES */
+
+.theme-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+
+.theme-card{
+  padding:9px;
+  border-radius:15px;
+  text-align:left;
+  color:var(--text);
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.theme-card.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(139,92,246,.15);
+}
+
+.theme-preview{
+  height:40px;
+  margin-bottom:6px;
+  border-radius:10px;
+}
+
+.theme-card b{font-size:10px}
+
+/* SETTINGS */
+
+.setting-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+
+.setting-row b{font-size:12px}
+
+.setting-row small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+}
+
+.switch{
+  width:44px;
+  height:24px;
+  padding:3px;
+  border-radius:20px;
+  background:rgba(255,255,255,.10);
+}
+
+.switch i{
+  display:block;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#94a3b8;
+}
+
+.switch.on{background:var(--accent)}
+
+.switch.on i{
+  transform:translateX(20px);
+  background:#fff;
+}
+
+/* SEARCH */
+
+.search-box{
+  display:flex;
+  gap:7px;
+  padding:9px;
+  border-radius:15px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.search-box input{
+  flex:1;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+}
+
+.search-result{
+  padding:12px;
+  margin-top:8px;
+  border-radius:15px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.search-result-name{
+  font-size:10px;
+  font-weight:800;
+}
+
+.search-result-text{
+  font-size:12px;
+  margin-top:4px;
+}
+
+/* DASHBOARD */
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+
+.stat{
+  padding:14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.stat-icon{font-size:19px}
+
+.stat-value{
+  margin-top:3px;
+  font-size:20px;
+  font-weight:800;
+}
+
+.stat-label{
+  color:var(--muted);
+  font-size:9px;
+}
+
+.full-btn{
+  width:100%;
+  height:48px;
+  margin-top:12px;
+  border-radius:15px;
+  color:#fff;
+  font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
+
+/* GIFT */
+
+.gift-card{
+  padding:17px;
+  text-align:center;
+  border-radius:18px;
+  background:rgba(236,72,153,.10);
+  border:1px solid rgba(236,72,153,.18);
+}
+
+.gift-icon{font-size:45px}
+
+/* TOAST */
+
+#toast{
+  position:fixed;
+  z-index:500;
+  left:50%;
+  bottom:78px;
+  transform:translate(-50%,15px);
+  opacity:0;
+  padding:9px 14px;
+  border-radius:13px;
+  background:var(--card);
+  border:1px solid var(--border);
+  font-size:11px;
+  pointer-events:none;
+}
+
+#toast.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
+
+@media(min-width:700px){
+  #chat{
+    width:650px;
+    margin:auto;
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+  }
+}
+</style>
 </head>
 
 <body>
 
-  <!-- LOGIN SCREEN -->
-  <div id="setup-screen" class="screen">
+<div class="ambient">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+</div>
 
-    <div style="width: 100%; max-width: 300px; text-align: center;">
+<!-- LOGIN -->
 
-      <h3 style="margin-top: 0;">End to End</h3>
+<section id="setup">
 
-      <input
-        type="text"
-        id="user-id"
-        placeholder="Enter Name"
-        style="width:100%; padding:10px; margin-bottom:10px;
-        border-radius:5px; border:1px solid #ccc;"
-      >
+  <div class="login-card">
 
-      <br>
+    <div class="logo">N</div>
 
-      <input
-        type="text"
-        id="room-id"
-        placeholder="Message Code"
-        style="width:100%; padding:10px; margin-bottom:10px;
-        border-radius:5px; border:1px solid #ccc;"
-      >
+    <div class="title">NikAim</div>
 
-      <br>
-
-      <button
-        onclick="startChat()"
-        style="width:100%; padding:10px; background:#25d366;
-        color:white; border:none; border-radius:5px;
-        font-weight:bold; cursor:pointer;"
-      >
-        Start Chat
-      </button>
-
+    <div class="subtitle">
+      Private • Personal • Beautiful
     </div>
-  </div>
 
+    <div class="identity-preview">
 
-  <!-- CHAT SCREEN -->
-  <div id="chat-screen" class="screen hidden">
-
-    <div class="chat-header">
-
-      <div id="status-bar">
-        Offline
+      <div
+        class="preview-avatar"
+        id="previewAvatar"
+      >
+        N
       </div>
 
-      <button
-        class="wp-btn"
-        onclick="openWpModal()"
-      >
-        🎨 Wallpaper
-      </button>
+      <div>
 
-    </div>
-
-
-    <div id="chat-box"></div>
-
-
-    <!-- TYPING INDICATOR -->
-    <div id="typing-indicator">
-      <span id="typing-user"></span> is typing...
-    </div>
-
-
-    <div class="input-container">
-
-      <input
-        type="text"
-        id="msg-input"
-        placeholder="Type a message..."
-        onkeypress="handleKeyPress(event)"
-      >
-
-      <button onclick="sendMessage()">
-        Send
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <!-- WALLPAPER MODAL -->
-  <div id="wp-modal" class="modal hidden">
-
-    <div class="modal-content">
-
-      <h4>Select Wallpaper</h4>
-
-      <div class="wallpaper-options">
-
-        <img
-          src="bg1.jpg"
-          class="wp-thumb"
-          onclick="changeWallpaper('bg1.jpg')"
+        <div
+          class="preview-name"
+          id="previewName"
         >
+          Your Name
+        </div>
 
-        <img
-          src="bg2.jpg"
-          class="wp-thumb"
-          onclick="changeWallpaper('bg2.jpg')"
-        >
-
-        <img
-          src="bg3.jpg"
-          class="wp-thumb"
-          onclick="changeWallpaper('bg3.jpg')"
-        >
-
-        <img
-          src="bg4.jpg"
-          class="wp-thumb"
-          onclick="changeWallpaper('bg4.jpg')"
-        >
+        <div class="preview-status">
+          ● Ready to connect
+        </div>
 
       </div>
 
-      <button
-        onclick="closeWpModal()"
-        style="padding:5px 15px; background:#888;
-        color:white; border:none; border-radius:5px;
-        cursor:pointer;"
+    </div>
+
+    <input
+      id="username"
+      class="input"
+      maxlength="30"
+      autocomplete="off"
+      placeholder="Enter your name"
+    >
+
+    <input
+      id="roomId"
+      class="input"
+      maxlength="60"
+      autocomplete="off"
+      placeholder="Enter private chat code"
+    >
+
+    <button
+      class="enter"
+      onclick="startChat()"
+    >
+      Enter NikAim →
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- CHAT -->
+
+<section id="chat" class="hidden">
+
+  <header class="header">
+
+    <div
+      class="header-profile"
+      onclick="openProfile()"
+    >
+
+      <div
+        class="header-avatar"
+        id="headerAvatar"
       >
-        Close
+        N
+      </div>
+
+      <div class="header-info">
+
+        <div
+          class="header-name"
+          id="headerName"
+        >
+          NikAim
+        </div>
+
+        <div
+          class="status"
+          id="status"
+        >
+          Connecting...
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="header-actions">
+
+      <button
+        class="icon-btn"
+        onclick="openSearch()"
+      >
+        🔍
+      </button>
+
+      <button
+        class="icon-btn"
+        onclick="openDashboard()"
+      >
+        ✨
+      </button>
+
+      <button
+        class="icon-btn"
+        onclick="openSettings()"
+      >
+        ⋮
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <div class="chat-area">
+
+    <div id="messages"></div>
+
+
+    <div
+      id="typingIndicator"
+      class="typing-indicator hidden"
+    >
+
+      <span id="typingName">
+        Someone
+      </span>
+
+      is typing
+
+      <span class="typing-dots">
+        <span>•</span>
+        <span>•</span>
+        <span>•</span>
+      </span>
+
+    </div>
+
+
+    <!-- WHATSAPP STYLE REPLY COMPOSER -->
+
+    <div
+      id="replyComposer"
+      class="reply-composer hidden"
+    >
+
+      <div class="reply-composer-line">
+
+        <div class="reply-composer-content">
+
+          <div
+            id="replyComposerSender"
+            class="reply-composer-sender"
+          ></div>
+
+          <div
+            id="replyComposerText"
+            class="reply-composer-text"
+          ></div>
+
+        </div>
+
+        <button
+          class="reply-cancel"
+          onclick="cancelReply()"
+        >
+          ✕
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="input-bar">
+
+      <button
+        class="small-btn"
+        onclick="addEmoji()"
+      >
+        😊
+      </button>
+
+      <button
+        class="small-btn"
+        onclick="openGift()"
+      >
+        🎁
+      </button>
+
+      <input
+        id="messageInput"
+        class="message-input"
+        autocomplete="off"
+        placeholder="Write a message..."
+      >
+
+      <button
+        class="small-btn send-btn"
+        onclick="sendMessage()"
+      >
+        ➤
       </button>
 
     </div>
 
   </div>
+
+</section>
+
+
+<!-- PROFILE MODAL -->
+
+<div
+  id="profileModal"
+  class="modal-bg hidden"
+  onclick="closeOutside(event,'profileModal')"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        Profile
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('profileModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+
+    <div class="profile-top">
+
+      <div
+        class="profile-avatar"
+        id="profileAvatar"
+      >
+        N
+      </div>
+
+      <div
+        class="profile-name"
+        id="profileName"
+      >
+        NikAim
+      </div>
+
+      <div
+        id="profileStatus"
+        class="profile-online"
+      >
+        ● Online
+      </div>
+
+    </div>
+
+
+    <div class="section-title">
+      Current Mood
+    </div>
+
+
+    <div class="mood-card">
+
+      <div
+        class="mood-big"
+        id="profileMoodEmoji"
+      >
+        😊
+      </div>
+
+      <div>
+
+        <div
+          class="mood-name"
+          id="profileMoodName"
+        >
+          Happy
+        </div>
+
+        <div
+          class="mood-description"
+          id="profileMoodDescription"
+        >
+          Current mood
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="ownMoodControls"
+      class="hidden"
+    >
+
+      <div class="section-title">
+        Change My Mood
+      </div>
+
+      <div class="theme-grid">
+
+        <button
+          class="theme-card"
+          onclick="setMood('😊')"
+        >
+          😊 Happy
+        </button>
+
+        <button
+          class="theme-card"
+          onclick="setMood('❤️')"
+        >
+          ❤️ Love
+        </button>
+
+        <button
+          class="theme-card"
+          onclick="setMood('😎')"
+        >
+          😎 Chill
+        </button>
+
+        <button
+          class="theme-card"
+          onclick="setMood('🔥')"
+        >
+          🔥 Busy
+        </button>
+
+        <button
+          class="theme-card"
+          onclick="setMood('🎮')"
+        >
+          🎮 Gaming
+        </button>
+
+        <button
+          class="theme-card"
+          onclick="setMood('😴')"
+        >
+          😴 Sleeping
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- SETTINGS -->
+
+<div
+  id="settingsModal"
+  class="modal-bg hidden"
+  onclick="closeOutside(event,'settingsModal')"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        NikAim Settings
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('settingsModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div class="section-title">
+      Appearance
+    </div>
+
+    <div class="setting-row">
+
+      <div>
+
+        <b>Light Mode</b>
+
+        <small>
+          Change chat appearance
+        </small>
+
+      </div>
+
+      <button
+        id="lightSwitch"
+        class="switch"
+        onclick="toggleLight()"
+      >
+        <i></i>
+      </button>
+
+    </div>
+
+    <div class="section-title">
+      10 Premium Themes
+    </div>
+
+    <div
+      id="themeGrid"
+      class="theme-grid"
+    ></div>
+
+    <div class="section-title">
+      Mood
+    </div>
+
+    <div class="theme-grid">
+
+      <button
+        class="theme-card"
+        onclick="setMood('😊')"
+      >
+        😊 Happy
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="setMood('❤️')"
+      >
+        ❤️ Love
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="setMood('😎')"
+      >
+        😎 Chill
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="setMood('🔥')"
+      >
+        🔥 Busy
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="setMood('🎮')"
+      >
+        🎮 Gaming
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="setMood('😴')"
+      >
+        😴 Sleeping
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- SEARCH -->
+
+<div
+  id="searchModal"
+  class="modal-bg hidden"
+  onclick="closeOutside(event,'searchModal')"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        Search Messages
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('searchModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div class="search-box">
+
+      🔍
+
+      <input
+        id="searchInput"
+        placeholder="Search..."
+        oninput="searchMessages()"
+      >
+
+    </div>
+
+    <div id="searchResults"></div>
+
+  </div>
+
+</div>
+
+
+<!-- DASHBOARD -->
+
+<div
+  id="dashboardModal"
+  class="modal-bg hidden"
+  onclick="closeOutside(event,'dashboardModal')"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        Chat Dashboard
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('dashboardModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div class="stats">
+
+      <div class="stat">
+        <div class="stat-icon">💬</div>
+        <div
+          class="stat-value"
+          id="totalMessages"
+        >
+          0
+        </div>
+        <div class="stat-label">
+          Messages
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-icon">🔥</div>
+        <div
+          class="stat-value"
+          id="streakValue"
+        >
+          0
+        </div>
+        <div class="stat-label">
+          Day Streak
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-icon">❤️</div>
+        <div
+          class="stat-value"
+          id="reactionCount"
+        >
+          0
+        </div>
+        <div class="stat-label">
+          Reactions
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-icon">🏆</div>
+        <div
+          class="stat-value"
+          id="milestoneCount"
+        >
+          0
+        </div>
+        <div class="stat-label">
+          Milestones
+        </div>
+      </div>
+
+    </div>
+
+    <div class="section-title">
+      On This Day
+    </div>
+
+    <div
+      class="stat"
+      id="onThisDay"
+    >
+      No old memories yet.
+    </div>
+
+    <button
+      class="full-btn"
+      onclick="openRoomCode()"
+    >
+      🔳 Show Room Code
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- GIFT -->
+
+<div
+  id="giftModal"
+  class="modal-bg hidden"
+  onclick="closeOutside(event,'giftModal')"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        Digital Gift
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('giftModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div class="gift-card">
+
+      <div class="gift-icon">
+        🎁
+      </div>
+
+      <b>
+        Send something special
+      </b>
+
+    </div>
+
+    <div
+      class="theme-grid"
+      style="margin-top:12px"
+    >
+
+      <button
+        class="theme-card"
+        onclick="sendGift('🎁','A surprise for you!')"
+      >
+        🎁 Gift
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="sendGift('❤️','Sending you love ❤️')"
+      >
+        ❤️ Love
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="sendGift('🌹','A rose for you 🌹')"
+      >
+        🌹 Rose
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="sendGift('🎉','Congratulations! 🎉')"
+      >
+        🎉 Party
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="sendGift('☕','Coffee for you ☕')"
+      >
+        ☕ Coffee
+      </button>
+
+      <button
+        class="theme-card"
+        onclick="sendGift('⭐','You are special ⭐')"
+      >
+        ⭐ Star
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ROOM -->
+
+<div
+  id="roomModal"
+  class="modal-bg hidden"
+>
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div class="modal-title">
+        NikAim Room
+      </div>
+
+      <button
+        class="close-btn"
+        onclick="closeModal('roomModal')"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div
+      style="
+        text-align:center;
+        padding:20px
+      "
+    >
+
+      <div
+        style="
+          font-size:11px;
+          color:var(--muted)
+        "
+      >
+        Room Code
+      </div>
+
+      <div
+        id="roomCode"
+        style="
+          font-size:18px;
+          font-weight:800;
+          margin:12px;
+          word-break:break-all;
+        "
+      ></div>
+
+      <button
+        class="full-btn"
+        onclick="copyRoomCode()"
+      >
+        📋 Copy Room Code
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<div id="toast"></div>
 
 
 <script>
 
-  /* ================================
-     FIREBASE CONFIG
-  ================================= */
+/* =========================================================
+   FIREBASE
+========================================================= */
 
-  const firebaseConfig = {
+const firebaseConfig={
+  apiKey:"AIzaSyAqnVv76hqGgQiPJHLWWFlF_8wsgRk0cdQ",
+  authDomain:"nikami-b5a45.firebaseapp.com",
+  databaseURL:"https://nikami-b5a45-default-rtdb.firebaseio.com",
+  projectId:"nikami-b5a45",
+  storageBucket:"nikami-b5a45.firebasestorage.app",
+  messagingSenderId:"1033787624852",
+  appId:"1:1033787624852:web:188fb97dc5752744a01381",
+  measurementId:"G-QSCXJW9YTC"
+};
 
-    apiKey: "AIzaSyAqnVv76hqGgQiPJHLWWFlF_8wsgRk0cdQ",
+firebase.initializeApp(firebaseConfig);
 
-    authDomain:
-      "nikami-b5a45.firebaseapp.com",
-
-    databaseURL:
-      "https://nikami-b5a45-default-rtdb.firebaseio.com",
-
-    projectId:
-      "nikami-b5a45",
-
-    storageBucket:
-      "nikami-b5a45.firebasestorage.app",
-
-    messagingSenderId:
-      "1033787624852",
-
-    appId:
-      "1:1033787624852:web:188fb97dc5752744a01381",
-
-    measurementId:
-      "G-QSCXJW9YTC"
-  };
+const db=firebase.database();
 
 
-  firebase.initializeApp(firebaseConfig);
+/* =========================================================
+   VARIABLES
+========================================================= */
 
-  const db = firebase.database();
+let myUser="";
+let roomId="";
+let roomRef=null;
 
+let messages=[];
 
-  let myUser = "";
-  let roomId = "";
-  let roomRef;
-
-  let typingTimeout;
-
-
-  /* ================================
-     WALLPAPER
-  ================================= */
-
-  window.onload = function() {
-
-    const savedBg =
-      localStorage.getItem('chatWallpaper');
-
-    if (savedBg) {
-      applyBg(savedBg);
-    }
-  };
+let typingTimer=null;
 
 
-  function openWpModal() {
+/*
+  NEW REPLY SYSTEM
 
-    document
-      .getElementById('wp-modal')
-      .classList
-      .remove('hidden');
+  replyTo contains the complete
+  original message reference.
+*/
+
+let replyTo=null;
+
+let otherUserName="";
+
+let otherUserData={};
+
+let profileShowingUser="";
+
+
+let sessionId=
+  localStorage.getItem(
+    "nikAimSessionId"
+  );
+
+if(!sessionId){
+
+  sessionId=
+    "session_"+
+    Math.random()
+      .toString(36)
+      .substring(2)+
+    "_"+
+    Date.now();
+
+  localStorage.setItem(
+    "nikAimSessionId",
+    sessionId
+  );
+
+}
+
+
+let currentTheme=
+  localStorage.getItem(
+    "nikAimTheme"
+  )||
+  "midnight";
+
+let currentMood=
+  localStorage.getItem(
+    "nikAimMood"
+  )||
+  "😊";
+
+
+/* =========================================================
+   MOODS
+========================================================= */
+
+const moods={
+
+  "😊":{
+    name:"Happy",
+    description:"Feeling happy 😊"
+  },
+
+  "❤️":{
+    name:"Love",
+    description:"Feeling loved ❤️"
+  },
+
+  "😎":{
+    name:"Chill",
+    description:"Relaxing & chilling 😎"
+  },
+
+  "🔥":{
+    name:"Busy",
+    description:"Currently busy 🔥"
+  },
+
+  "🎮":{
+    name:"Gaming",
+    description:"Gaming mode 🎮"
+  },
+
+  "😴":{
+    name:"Sleeping",
+    description:"Sleeping / resting 😴"
   }
 
+};
 
-  function closeWpModal() {
 
-    document
-      .getElementById('wp-modal')
-      .classList
-      .add('hidden');
+function getMoodInfo(emoji){
+
+  return moods[emoji]||{
+    name:"Normal",
+    description:"Current mood"
+  };
+
+}
+
+
+/* =========================================================
+   THEMES
+========================================================= */
+
+const themes={
+
+  midnight:{
+    name:"Midnight Purple",
+    a:"#8b5cf6",
+    b:"#2563eb",
+    bubble:"#7c3aed",
+    bg:"#070812"
+  },
+
+  ocean:{
+    name:"Ocean Blue",
+    a:"#06b6d4",
+    b:"#2563eb",
+    bubble:"#0891b2",
+    bg:"#03131c"
+  },
+
+  rose:{
+    name:"Rose Love",
+    a:"#ec4899",
+    b:"#8b5cf6",
+    bubble:"#db2777",
+    bg:"#180711"
+  },
+
+  emerald:{
+    name:"Emerald",
+    a:"#10b981",
+    b:"#059669",
+    bubble:"#059669",
+    bg:"#03130e"
+  },
+
+  sunset:{
+    name:"Sunset",
+    a:"#f97316",
+    b:"#ec4899",
+    bubble:"#ea580c",
+    bg:"#160904"
+  },
+
+  cyber:{
+    name:"Cyber Red",
+    a:"#ef4444",
+    b:"#f43f5e",
+    bubble:"#dc2626",
+    bg:"#110507"
+  },
+
+  cyan:{
+    name:"Crystal Cyan",
+    a:"#22d3ee",
+    b:"#06b6d4",
+    bubble:"#0891b2",
+    bg:"#021215"
+  },
+
+  galaxy:{
+    name:"Galaxy",
+    a:"#a855f7",
+    b:"#ec4899",
+    bubble:"#7e22ce",
+    bg:"#090413"
+  },
+
+  black:{
+    name:"Pure Black",
+    a:"#f8fafc",
+    b:"#64748b",
+    bubble:"#27272a",
+    bg:"#000000"
+  },
+
+  aurora:{
+    name:"Aurora",
+    a:"#34d399",
+    b:"#8b5cf6",
+    bubble:"#059669",
+    bg:"#04100e"
   }
 
+};
 
-  function changeWallpaper(img) {
 
-    applyBg(img);
+/* =========================================================
+   THEME
+========================================================= */
 
-    localStorage.setItem(
-      'chatWallpaper',
-      img
+function applyTheme(name){
+
+  const t=themes[name];
+
+  if(!t)return;
+
+  currentTheme=name;
+
+  const root=document.documentElement;
+
+  root.style.setProperty(
+    "--accent",
+    t.a
+  );
+
+  root.style.setProperty(
+    "--accent2",
+    t.b
+  );
+
+  root.style.setProperty(
+    "--bubble1",
+    t.bubble
+  );
+
+  root.style.setProperty(
+    "--bubble2",
+    t.b
+  );
+
+  root.style.setProperty(
+    "--bg",
+    t.bg
+  );
+
+  localStorage.setItem(
+    "nikAimTheme",
+    name
+  );
+
+  renderThemes();
+
+}
+
+
+function renderThemes(){
+
+  const grid=
+    document.getElementById(
+      "themeGrid"
     );
 
-    closeWpModal();
+  if(!grid)return;
+
+  grid.innerHTML="";
+
+  Object.keys(themes).forEach(
+    key=>{
+
+      const t=themes[key];
+
+      const button=
+        document.createElement(
+          "button"
+        );
+
+      button.className=
+        "theme-card "+
+        (
+          key===currentTheme
+            ?"active"
+            :""
+        );
+
+      button.innerHTML=`
+
+        <div
+          class="theme-preview"
+          style="
+            background:
+            linear-gradient(
+              135deg,
+              ${t.a},
+              ${t.b},
+              ${t.bubble}
+            );
+          "
+        ></div>
+
+        <b>${t.name}</b>
+      `;
+
+      button.onclick=()=>{
+
+        applyTheme(key);
+
+        showToast(
+          t.name+
+          " activated ✨"
+        );
+
+      };
+
+      grid.appendChild(button);
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   NAME PREVIEW
+========================================================= */
+
+document
+  .getElementById("username")
+  .addEventListener(
+    "input",
+    function(){
+
+      const name=
+        this.value.trim()||
+        "Your Name";
+
+      document
+        .getElementById(
+          "previewName"
+        )
+        .textContent=name;
+
+      document
+        .getElementById(
+          "previewAvatar"
+        )
+        .textContent=
+        name.charAt(0)
+          .toUpperCase()||
+        "N";
+
+    }
+  );
+
+
+/* =========================================================
+   START CHAT
+========================================================= */
+
+function startChat(){
+
+  myUser=
+    document
+      .getElementById("username")
+      .value
+      .trim();
+
+  roomId=
+    document
+      .getElementById("roomId")
+      .value
+      .trim();
+
+  if(!myUser){
+
+    showToast(
+      "Name enter karo"
+    );
+
+    return;
+
   }
 
+  if(!roomId){
 
-  function applyBg(img) {
+    showToast(
+      "Chat code enter karo"
+    );
 
-    document.body.style.backgroundImage =
-      `url('${img}')`;
+    return;
+
   }
 
+  localStorage.setItem(
+    "nikAimName",
+    myUser
+  );
 
-  /* ================================
-     PUSH NOTIFICATIONS
-  ================================= */
+  document
+    .getElementById("setup")
+    .classList
+    .add("hidden");
 
-  function setupPushNotifications() {
+  document
+    .getElementById("chat")
+    .classList
+    .remove("hidden");
 
-    try {
+  document
+    .getElementById("headerAvatar")
+    .textContent=
+    myUser
+      .charAt(0)
+      .toUpperCase();
 
-      if (
-        'serviceWorker' in navigator &&
-        firebase.messaging.isSupported()
-      ) {
+  roomRef=
+    db.ref(
+      "rooms/"+roomId
+    );
 
-        const messaging =
-          firebase.messaging();
+  setupPresence();
+  setupTyping();
+  setupOtherUser();
+  receiveMessages();
+
+  showToast(
+    "Welcome to NikAim ✨"
+  );
+
+}
 
 
-        Notification.requestPermission()
-          .then((permission) => {
+/* =========================================================
+   PRESENCE
+========================================================= */
 
-            if (permission === 'granted') {
+function setupPresence(){
 
-              navigator.serviceWorker
-                .register('firebase-messaging-sw.js')
+  const userRef=
+    roomRef
+      .child("users")
+      .child(myUser);
 
-                .then((registration) => {
+  userRef.set({
 
-                  messaging.useServiceWorker(
-                    registration
-                  );
+    online:true,
 
-                  return messaging.getToken({
+    mood:currentMood,
 
-                    vapidKey:
-                      'BJWYh7mvIcBFgk3eopYbwyzFWXTEKNHMzqKSephdLfC_scW2fdyEpFwZpnRFpNTQYBbYXHYq6ZshPchnjvVrStU'
+    lastSeen:
+      firebase
+        .database
+        .ServerValue
+        .TIMESTAMP
 
-                  });
+  });
 
-                })
+  userRef
+    .onDisconnect()
+    .set({
 
-                .then((token) => {
+      online:false,
 
-                  if (token) {
+      mood:currentMood,
 
-                    db.ref(
-                      "rooms/" +
-                      roomId +
-                      "/tokens/" +
-                      myUser
-                    ).set(token);
+      lastSeen:
+        firebase
+          .database
+          .ServerValue
+          .TIMESTAMP
 
-                  }
+    });
 
-                })
+}
 
-                .catch((err) => {
 
-                  console.log(
-                    'Notification Token Error:',
-                    err
-                  );
+/* =========================================================
+   OTHER USER
+========================================================= */
 
-                });
+function setupOtherUser(){
+
+  roomRef
+    .child("users")
+    .on(
+      "value",
+      snapshot=>{
+
+        const users=
+          snapshot.val()||{};
+
+        let foundUser=null;
+        let foundData=null;
+
+        Object.keys(users)
+          .forEach(
+            user=>{
+
+              if(user!==myUser){
+
+                foundUser=user;
+                foundData=
+                  users[user]||{};
+
+              }
 
             }
+          );
 
-          });
+        otherUserName=
+          foundUser||"";
 
+        otherUserData=
+          foundData||{};
 
-        messaging.onMessage((payload) => {
+        const name=
+          document.getElementById(
+            "headerName"
+          );
 
-          if (
-            Notification.permission ===
-            'granted'
-          ) {
+        const status=
+          document.getElementById(
+            "status"
+          );
 
-            new Notification(
-              payload.notification.title,
-              {
-                body:
-                  payload.notification.body,
+        if(!foundUser){
 
-                icon:
-                  payload.notification.icon ||
-                  'https://cdn-icons-png.flaticon.com/512/134/134937.png'
-              }
-            );
+          name.textContent=
+            "Private Chat";
 
-          }
+          status.textContent=
+            "Waiting for someone...";
 
-        });
+          status.classList.remove(
+            "online"
+          );
 
-      }
+          return;
 
-    } catch(e) {
+        }
 
-      console.log(
-        "Messaging error:",
-        e
-      );
+        name.textContent=
+          foundUser;
 
-    }
+        document
+          .getElementById(
+            "headerAvatar"
+          )
+          .textContent=
+          foundUser
+            .charAt(0)
+            .toUpperCase();
 
-  }
+        const moodEmoji=
+          foundData.mood||
+          "😊";
 
+        const moodInfo=
+          getMoodInfo(
+            moodEmoji
+          );
 
-  /* ================================
-     START CHAT
-  ================================= */
+        if(foundData.online){
 
-  function startChat() {
+          status.textContent=
+            "● Online  "+
+            moodEmoji+
+            " "+
+            moodInfo.name;
 
-    myUser =
-      document
-        .getElementById("user-id")
-        .value
-        .trim();
+          status.classList.add(
+            "online"
+          );
 
+        }else{
 
-    roomId =
-      document
-        .getElementById("room-id")
-        .value
-        .trim();
+          status.textContent=
+            "Offline  "+
+            moodEmoji+
+            " "+
+            moodInfo.name;
 
-
-    if (!myUser || !roomId) {
-
-      alert(
-        "Please enter Name and Code!"
-      );
-
-      return;
-    }
-
-
-    document
-      .getElementById("setup-screen")
-      .classList
-      .add("hidden");
-
-
-    document
-      .getElementById("chat-screen")
-      .classList
-      .remove("hidden");
-
-
-    roomRef =
-      db.ref(
-        "rooms/" + roomId
-      );
-
-
-    setupPushNotifications();
-
-    setupTypingIndicator();
-
-
-    /* ONLINE / OFFLINE */
-
-    const connectedRef =
-      db.ref(".info/connected");
-
-
-    const myStatusRef =
-      db.ref(
-        "rooms/" +
-        roomId +
-        "/users/" +
-        myUser
-      );
-
-
-    connectedRef.on(
-      "value",
-      (snap) => {
-
-        if (snap.val() === true) {
-
-          myStatusRef
-            .onDisconnect()
-            .set("offline");
-
-
-          myStatusRef.set(
+          status.classList.remove(
             "online"
           );
 
         }
 
-      }
-    );
+        if(
+          profileShowingUser===
+          foundUser
+        ){
 
-
-    window.addEventListener(
-      "beforeunload",
-      () => {
-
-        myStatusRef.set(
-          "offline"
-        );
-
-        if (roomRef && myUser) {
-
-          roomRef
-            .child("typing/" + myUser)
-            .set({
-              typing: false,
-              name: myUser
-            });
-
-        }
-
-      }
-    );
-
-
-    /* OTHER USER STATUS */
-
-    db.ref(
-      "rooms/" +
-      roomId +
-      "/users"
-    ).on(
-      "value",
-      (snapshot) => {
-
-        const users =
-          snapshot.val() || {};
-
-
-        let isAnyOtherOnline =
-          false;
-
-        let otherUserName =
-          "";
-
-
-        Object.keys(users)
-          .forEach((u) => {
-
-            if (u !== myUser) {
-
-              otherUserName =
-                u;
-
-              if (
-                users[u] ===
-                "online"
-              ) {
-
-                isAnyOtherOnline =
-                  true;
-
-              }
-
-            }
-
-          });
-
-
-        const statusBar =
-          document.getElementById(
-            "status-bar"
-          );
-
-
-        if (isAnyOtherOnline) {
-
-          statusBar.innerText =
-            `${otherUserName} Online 🟢`;
-
-        }
-
-        else if (otherUserName) {
-
-          statusBar.innerText =
-            `${otherUserName} Offline`;
-
-        }
-
-        else {
-
-          statusBar.innerText =
-            "Offline";
-
-        }
-
-      }
-    );
-
-
-    /* RECEIVE MESSAGES */
-
-    roomRef
-      .child("messages")
-      .on(
-        "child_added",
-        (snapshot) => {
-
-          const msg =
-            snapshot.val();
-
-          const msgId =
-            snapshot.key;
-
-
-          if (
-            msg.sender !== myUser &&
-            !msg.read
-          ) {
-
-            roomRef
-              .child(
-                "messages/" +
-                msgId
-              )
-              .update({
-                read: true
-              });
-
-          }
-
-
-          displayMessage(
-            msgId,
-            msg
+          renderProfile(
+            foundUser,
+            foundData
           );
 
         }
-      );
-
-
-    /* READ TICK UPDATE */
-
-    roomRef
-      .child("messages")
-      .on(
-        "child_changed",
-        (snapshot) => {
-
-          const msgId =
-            snapshot.key;
-
-          const msg =
-            snapshot.val();
-
-
-          const tickSpan =
-            document.getElementById(
-              "tick-" +
-              msgId
-            );
-
-
-          if (
-            tickSpan &&
-            msg.read
-          ) {
-
-            tickSpan.innerText =
-              "✓✓";
-
-            tickSpan.classList.add(
-              "read"
-            );
-
-          }
-
-        }
-      );
-
-  }
-
-
-  /* ================================
-     TYPING INDICATOR
-  ================================= */
-
-  function setupTypingIndicator() {
-
-    const input =
-      document.getElementById(
-        "msg-input"
-      );
-
-
-    if (!input || !roomRef) {
-      return;
-    }
-
-
-    input.addEventListener(
-      "input",
-      function() {
-
-        if (!roomRef || !myUser) {
-          return;
-        }
-
-
-        const isTyping =
-          input.value.trim().length > 0;
-
-
-        roomRef
-          .child(
-            "typing/" +
-            myUser
-          )
-          .set({
-
-            typing:
-              isTyping,
-
-            name:
-              myUser
-
-          });
-
-
-        clearTimeout(
-          typingTimeout
-        );
-
-
-        if (isTyping) {
-
-          typingTimeout =
-            setTimeout(
-              function() {
-
-                roomRef
-                  .child(
-                    "typing/" +
-                    myUser
-                  )
-                  .set({
-
-                    typing:
-                      false,
-
-                    name:
-                      myUser
-
-                  });
-
-              },
-              1500
-            );
-
-        }
 
       }
     );
 
-
-    /* LISTEN FOR OTHER USER TYPING */
-
-    roomRef
-      .child("typing")
-      .on(
-        "value",
-        function(snapshot) {
-
-          const typingUsers =
-            snapshot.val() || {};
+}
 
 
-          let otherTypingUser =
-            "";
+/* =========================================================
+   PROFILE
+========================================================= */
 
+function openProfile(){
 
-          Object.keys(typingUsers)
-            .forEach(
-              function(user) {
+  if(!myUser)return;
 
-                if (
-                  user !== myUser &&
-                  typingUsers[user] &&
-                  typingUsers[user].typing === true
-                ) {
+  if(otherUserName){
 
-                  otherTypingUser =
-                    typingUsers[user].name ||
-                    user;
+    profileShowingUser=
+      otherUserName;
 
-                }
+    renderProfile(
+      otherUserName,
+      otherUserData
+    );
 
-              }
-            );
+  }else{
 
+    profileShowingUser=
+      myUser;
 
-          const indicator =
-            document.getElementById(
-              "typing-indicator"
-            );
-
-
-          const username =
-            document.getElementById(
-              "typing-user"
-            );
-
-
-          if (
-            otherTypingUser
-          ) {
-
-            username.innerText =
-              otherTypingUser;
-
-            indicator.style.display =
-              "block";
-
-          }
-
-          else {
-
-            indicator.style.display =
-              "none";
-
-          }
-
-        }
-      );
+    renderProfile(
+      myUser,
+      {
+        online:true,
+        mood:currentMood
+      }
+    );
 
   }
 
+  document
+    .getElementById(
+      "profileModal"
+    )
+    .classList
+    .remove("hidden");
 
-  /* ================================
-     ENTER KEY
-  ================================= */
+}
 
-  function handleKeyPress(e) {
 
-    if (e.key === 'Enter') {
+function renderProfile(
+  username,
+  data
+){
 
-      sendMessage();
+  const isMe=
+    username===myUser;
 
-    }
+  const moodEmoji=
+    (
+      data&&
+      data.mood
+    )||
+    (
+      isMe
+        ?currentMood
+        :"😊"
+    );
+
+  const moodInfo=
+    getMoodInfo(
+      moodEmoji
+    );
+
+  document
+    .getElementById(
+      "profileAvatar"
+    )
+    .textContent=
+    username
+      .charAt(0)
+      .toUpperCase()||
+    "N";
+
+  document
+    .getElementById(
+      "profileName"
+    )
+    .textContent=
+    username;
+
+  const status=
+    document.getElementById(
+      "profileStatus"
+    );
+
+  if(
+    isMe||
+    (
+      data&&
+      data.online
+    )
+  ){
+
+    status.textContent=
+      "● Online";
+
+    status.className=
+      "profile-online";
+
+  }else{
+
+    status.textContent=
+      "● Offline";
+
+    status.className=
+      "profile-offline";
 
   }
 
+  document
+    .getElementById(
+      "profileMoodEmoji"
+    )
+    .textContent=
+    moodEmoji;
 
-  /* ================================
-     SEND MESSAGE
-  ================================= */
+  document
+    .getElementById(
+      "profileMoodName"
+    )
+    .textContent=
+    moodInfo.name;
 
-  function sendMessage() {
+  document
+    .getElementById(
+      "profileMoodDescription"
+    )
+    .textContent=
+    moodInfo.description;
 
-    const input =
-      document.getElementById(
-        "msg-input"
-      );
+  document
+    .getElementById(
+      "ownMoodControls"
+    )
+    .classList
+    .toggle(
+      "hidden",
+      !isMe
+    );
+
+}
 
 
-    const text =
-      input.value.trim();
+/* =========================================================
+   TYPING
+========================================================= */
 
+function setupTyping(){
 
-    if (text) {
+  const input=
+    document.getElementById(
+      "messageInput"
+    );
+
+  input.addEventListener(
+    "input",
+    function(){
+
+      const isTyping=
+        input.value.trim()
+          .length>0;
 
       roomRef
-        .child("messages")
-        .push({
-
-          sender:
-            myUser,
-
-          text:
-            text,
-
-          read:
-            false,
-
-          timestamp:
-            Date.now()
-
-        });
-
-
-      triggerPushNotification(
-        text
-      );
-
-
-      /* STOP TYPING */
-
-      roomRef
-        .child(
-          "typing/" +
-          myUser
-        )
+        .child("typing")
+        .child(sessionId)
         .set({
 
-          typing:
-            false,
+          user:myUser,
 
-          name:
-            myUser
+          typing:isTyping,
+
+          updatedAt:
+            firebase
+              .database
+              .ServerValue
+              .TIMESTAMP
 
         });
 
-
       clearTimeout(
-        typingTimeout
+        typingTimer
       );
 
+      if(isTyping){
 
-      input.value = "";
+        typingTimer=
+          setTimeout(
+            stopTyping,
+            1200
+          );
 
-    }
-
-  }
-
-
-  /* ================================
-     PUSH NOTIFICATION
-  ================================= */
-
-  function triggerPushNotification(
-    messageText
-  ) {
-
-    const serverKey =
-      "BJWYhY7mvIcBFgk3eopYbwyzFWXTEKNHMzqKSephdLfC_scW2fdyEpFwZpnRFpNTQYBbYXHYq6ZshPchnjvVrStU";
-
-
-    if (
-      serverKey ===
-      "PASTE_YOUR_SERVER_KEY_HERE"
-    ) {
-
-      return;
+      }
 
     }
+  );
 
-
-    db.ref(
-      "rooms/" +
-      roomId +
-      "/tokens"
-    )
-    .once(
+  roomRef
+    .child("typing")
+    .on(
       "value",
-      (snapshot) => {
+      snapshot=>{
 
-        const tokens =
-          snapshot.val() || {};
+        const data=
+          snapshot.val()||{};
 
+        let activeName="";
 
-        Object.keys(tokens)
-          .forEach((user) => {
+        Object.keys(data)
+          .forEach(
+            id=>{
 
-            if (user !== myUser) {
+              if(id===sessionId)return;
 
-              const recipientToken =
-                tokens[user];
+              const item=data[id];
 
+              if(
+                item&&
+                item.typing===true
+              ){
 
-              fetch(
-                'https://fcm.googleapis.com/fcm/send',
-                {
+                const updated=
+                  Number(
+                    item.updatedAt||0
+                  );
 
-                  method:
-                    'POST',
+                if(
+                  Date.now()-updated<
+                  4000
+                ){
 
-                  headers: {
-
-                    'Content-Type':
-                      'application/json',
-
-                    'Authorization':
-                      'key=' +
-                      serverKey
-
-                  },
-
-                  body:
-                    JSON.stringify({
-
-                      to:
-                        recipientToken,
-
-                      notification: {
-
-                        title:
-                          myUser,
-
-                        body:
-                          messageText,
-
-                        icon:
-                          'https://cdn-icons-png.flaticon.com/512/134/134937.png'
-
-                      }
-
-                    })
+                  activeName=
+                    item.user||
+                    "Someone";
 
                 }
-              )
-              .catch(
-                err =>
-                  console.log(
-                    'FCM Send Error:',
-                    err
-                  )
-              );
+
+              }
 
             }
+          );
 
-          });
+        const indicator=
+          document.getElementById(
+            "typingIndicator"
+          );
+
+        if(activeName){
+
+          document
+            .getElementById(
+              "typingName"
+            )
+            .textContent=
+            activeName;
+
+          indicator
+            .classList
+            .remove("hidden");
+
+        }else{
+
+          indicator
+            .classList
+            .add("hidden");
+
+        }
 
       }
     );
 
-  }
+}
 
 
-  /* ================================
-     DISPLAY MESSAGE + TIME
-  ================================= */
+function stopTyping(){
 
-  function displayMessage(
-    msgId,
-    msg
-  ) {
+  if(!roomRef)return;
 
-    const chatBox =
-      document.getElementById(
-        "chat-box"
+  roomRef
+    .child("typing")
+    .child(sessionId)
+    .set({
+
+      user:myUser,
+
+      typing:false,
+
+      updatedAt:
+        firebase
+          .database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
+}
+
+
+/* =========================================================
+   REPLY SYSTEM
+========================================================= */
+
+function activateReply(message){
+
+  if(!message)return;
+
+  replyTo={
+
+    id:message.id||"",
+
+    sender:
+      message.sender||
+      "Message",
+
+    text:
+      message.text||
+      ""
+
+  };
+
+  const sender=
+    document.getElementById(
+      "replyComposerSender"
+    );
+
+  const text=
+    document.getElementById(
+      "replyComposerText"
+    );
+
+  sender.textContent=
+    replyTo.sender;
+
+  text.textContent=
+    replyTo.text||
+    (
+      message.type==="gift"
+        ?"🎁 Gift"
+        :""
+    );
+
+  document
+    .getElementById(
+      "replyComposer"
+    )
+    .classList
+    .remove("hidden");
+
+  const input=
+    document.getElementById(
+      "messageInput"
+    );
+
+  input.placeholder=
+    "Replying to "+
+    replyTo.sender;
+
+  input.focus();
+
+}
+
+
+function cancelReply(){
+
+  replyTo=null;
+
+  document
+    .getElementById(
+      "replyComposer"
+    )
+    .classList
+    .add("hidden");
+
+  const input=
+    document.getElementById(
+      "messageInput"
+    );
+
+  input.placeholder=
+    "Write a message...";
+
+}
+
+
+/* =========================================================
+   SEND MESSAGE
+========================================================= */
+
+function sendMessage(){
+
+  const input=
+    document.getElementById(
+      "messageInput"
+    );
+
+  const text=
+    input.value.trim();
+
+  if(!text)return;
+
+  const messageData={
+
+    sender:myUser,
+
+    text:text,
+
+    read:false,
+
+    timestamp:Date.now(),
+
+    type:"text",
+
+    reaction:"",
+
+    replyTo:
+      replyTo
+        ?{
+            id:replyTo.id,
+            sender:replyTo.sender,
+            text:replyTo.text
+          }
+        :null
+
+  };
+
+  roomRef
+    .child("messages")
+    .push(messageData)
+    .then(()=>{
+
+      input.value="";
+
+      cancelReply();
+
+      stopTyping();
+
+      clearTimeout(
+        typingTimer
       );
 
+    })
+    .catch(error=>{
 
-    const isMe =
-      msg.sender === myUser;
+      console.error(
+        "Message send error:",
+        error
+      );
+
+      showToast(
+        "Message send nahi hua"
+      );
+
+    });
+
+}
 
 
-    const msgDiv =
+/* =========================================================
+   ENTER SEND
+========================================================= */
+
+document
+  .getElementById(
+    "messageInput"
+  )
+  .addEventListener(
+    "keydown",
+    function(e){
+
+      if(e.key==="Enter"){
+
+        e.preventDefault();
+
+        sendMessage();
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   RECEIVE
+========================================================= */
+
+function receiveMessages(){
+
+  roomRef
+    .child("messages")
+    .on(
+      "child_added",
+      snapshot=>{
+
+        const message=
+          snapshot.val()||{};
+
+        message.id=
+          snapshot.key;
+
+        messages.push(message);
+
+        createMessageElement(
+          message
+        );
+
+        if(
+          message.sender!==myUser&&
+          !message.read
+        ){
+
+          snapshot.ref.update({
+            read:true
+          });
+
+        }
+
+        updateDashboard();
+
+      }
+    );
+
+
+  roomRef
+    .child("messages")
+    .on(
+      "child_changed",
+      snapshot=>{
+
+        const updated=
+          snapshot.val()||{};
+
+        updated.id=
+          snapshot.key;
+
+        const index=
+          messages.findIndex(
+            m=>m.id===updated.id
+          );
+
+        if(index!==-1){
+
+          messages[index]=
+            updated;
+
+        }
+
+        updateSingleMessage(
+          updated
+        );
+
+        updateDashboard();
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   REPLY DATA HELPER
+========================================================= */
+
+function getReplyData(message){
+
+  /*
+    New format:
+    message.replyTo
+
+    Old format:
+    message.reply
+  */
+
+  if(message.replyTo){
+
+    return {
+
+      id:
+        message.replyTo.id||
+        "",
+
+      sender:
+        message.replyTo.sender||
+        "Message",
+
+      text:
+        message.replyTo.text||
+        ""
+
+    };
+
+  }
+
+  if(message.reply){
+
+    return {
+
+      id:"",
+
+      sender:"Message",
+
+      text:
+        message.reply
+
+    };
+
+  }
+
+  return null;
+
+}
+
+
+/* =========================================================
+   CREATE MESSAGE
+========================================================= */
+
+function createMessageElement(
+  message
+){
+
+  const container=
+    document.getElementById(
+      "messages"
+    );
+
+  const row=
+    document.createElement(
+      "div"
+    );
+
+  row.className=
+    "message-row "+
+    (
+      message.sender===myUser
+        ?"mine"
+        :"other"
+    );
+
+  row.dataset.id=
+    message.id;
+
+  const bubble=
+    document.createElement(
+      "div"
+    );
+
+  bubble.className=
+    "message-bubble";
+
+
+  /* =====================================================
+     REPLY PREVIEW INSIDE MESSAGE
+  ===================================================== */
+
+  const replyData=
+    getReplyData(message);
+
+  if(replyData){
+
+    const reply=
       document.createElement(
         "div"
       );
 
+    reply.className=
+      "reply-preview";
 
-    msgDiv.className =
-      `msg ${
-        isMe
-          ? 'my-msg'
-          : 'other-msg'
-      }`;
+    const replySender=
+      document.createElement(
+        "div"
+      );
+
+    replySender.className=
+      "reply-preview-sender";
+
+    replySender.textContent=
+      replyData.sender;
+
+    const replyText=
+      document.createElement(
+        "div"
+      );
+
+    replyText.className=
+      "reply-preview-text";
+
+    replyText.textContent=
+      replyData.text||
+      "Message";
+
+    reply.appendChild(
+      replySender
+    );
+
+    reply.appendChild(
+      replyText
+    );
 
 
-    let timeHtml = "";
+    /*
+      Tap reply preview →
+      original message
+    */
 
+    if(replyData.id){
 
-    if (
-      msg.timestamp !== undefined &&
-      msg.timestamp !== null
-    ) {
+      reply.addEventListener(
+        "click",
+        function(e){
 
-      const date =
-        new Date(
-          Number(msg.timestamp)
-        );
+          e.stopPropagation();
 
-
-      if (
-        !isNaN(
-          date.getTime()
-        )
-      ) {
-
-        let hours =
-          date.getHours();
-
-
-        const minutes =
-          String(
-            date.getMinutes()
-          ).padStart(
-            2,
-            "0"
+          scrollToOriginalMessage(
+            replyData.id
           );
 
-
-        const ampm =
-          hours >= 12
-            ? "PM"
-            : "AM";
-
-
-        hours =
-          hours % 12;
-
-
-        if (hours === 0) {
-          hours = 12;
         }
+      );
+
+    }
+
+    bubble.appendChild(
+      reply
+    );
+
+  }
 
 
-        const time =
-          `${hours}:${minutes} ${ampm}`;
+  /* =====================================================
+     SENDER
+  ===================================================== */
+
+  if(message.sender!==myUser){
+
+    const sender=
+      document.createElement(
+        "div"
+      );
+
+    sender.className=
+      "sender";
+
+    sender.textContent=
+      message.sender;
+
+    bubble.appendChild(
+      sender
+    );
+
+  }
 
 
-        timeHtml =
-          `<span class="message-time">${time}</span>`;
+  /* =====================================================
+     GIFT
+  ===================================================== */
+
+  if(message.type==="gift"){
+
+    const gift=
+      document.createElement(
+        "div"
+      );
+
+    gift.style.textAlign=
+      "center";
+
+    gift.style.fontSize=
+      "40px";
+
+    gift.textContent=
+      message.gift||
+      "🎁";
+
+    bubble.appendChild(
+      gift
+    );
+
+  }
+
+
+  /* =====================================================
+     TEXT
+  ===================================================== */
+
+  const text=
+    document.createElement(
+      "div"
+    );
+
+  text.className=
+    "message-text";
+
+  text.textContent=
+    message.text||
+    "";
+
+  bubble.appendChild(
+    text
+  );
+
+
+  /* =====================================================
+     META
+  ===================================================== */
+
+  const meta=
+    document.createElement(
+      "div"
+    );
+
+  meta.className=
+    "message-meta";
+
+  const time=
+    document.createElement(
+      "span"
+    );
+
+  time.textContent=
+    formatTime(
+      message.timestamp
+    );
+
+  meta.appendChild(
+    time
+  );
+
+
+  if(message.sender===myUser){
+
+    const tick=
+      document.createElement(
+        "span"
+      );
+
+    tick.className=
+      "read-tick "+
+      (
+        message.read
+          ?"read"
+          :""
+      );
+
+    tick.textContent=
+      message.read
+        ?"✓✓"
+        :"✓";
+
+    tick.dataset.tick=
+      "true";
+
+    meta.appendChild(
+      tick
+    );
+
+  }
+
+  bubble.appendChild(
+    meta
+  );
+
+
+  /* =====================================================
+     REACTION
+  ===================================================== */
+
+  if(message.reaction){
+
+    addReactionBadge(
+      bubble,
+      message.reaction
+    );
+
+  }
+
+
+  /* =====================================================
+     GESTURE STATE
+  ===================================================== */
+
+  let startX=0;
+  let startY=0;
+
+  let currentX=0;
+
+  let isPointerDown=false;
+  let isSwipeGesture=false;
+  let swipeActivated=false;
+
+  let lastTap=0;
+
+
+  /* =====================================================
+     POINTER DOWN
+  ===================================================== */
+
+  bubble.addEventListener(
+    "pointerdown",
+    function(e){
+
+      if(e.button!==undefined&&
+         e.button!==0){
+
+        return;
+
+      }
+
+      startX=
+        e.clientX;
+
+      startY=
+        e.clientY;
+
+      currentX=
+        e.clientX;
+
+      isPointerDown=true;
+      isSwipeGesture=false;
+      swipeActivated=false;
+
+      /*
+        Pointer capture makes sure
+        movement outside bubble is
+        still tracked.
+      */
+
+      try{
+        bubble.setPointerCapture(
+          e.pointerId
+        );
+      }catch(err){}
+
+    }
+  );
+
+
+  /* =====================================================
+     POINTER MOVE
+  ===================================================== */
+
+  bubble.addEventListener(
+    "pointermove",
+    function(e){
+
+      if(!isPointerDown)return;
+
+      currentX=
+        e.clientX;
+
+      const dx=
+        currentX-startX;
+
+      const dy=
+        e.clientY-startY;
+
+
+      /*
+        Vertical movement wins.
+        This keeps normal scrolling.
+      */
+
+      if(
+        Math.abs(dy)>
+        Math.abs(dx)
+      ){
+
+        return;
+
+      }
+
+
+      /*
+        ONLY LEFT → RIGHT
+
+        Negative dx is ignored.
+      */
+
+      if(dx<=0){
+
+        bubble.style.transform=
+          "translateX(0px)";
+
+        return;
+
+      }
+
+
+      /*
+        Horizontal swipe detected.
+      */
+
+      if(dx>10){
+
+        isSwipeGesture=true;
+
+      }
+
+
+      /*
+        Limit movement.
+      */
+
+      const move=
+        Math.min(
+          dx,
+          82
+        );
+
+      bubble.style.transform=
+        "translateX("+
+        move+
+        "px)";
+
+
+      /*
+        At ~55px, activate reply
+        directly. No extra button.
+      */
+
+      if(
+        dx>=55&&
+        !swipeActivated
+      ){
+
+        swipeActivated=true;
+
+        activateReply(
+          message
+        );
 
       }
 
     }
+  );
 
 
-    let tickHtml = "";
+  /* =====================================================
+     POINTER UP
+  ===================================================== */
+
+  bubble.addEventListener(
+    "pointerup",
+    function(e){
+
+      if(!isPointerDown)return;
+
+      isPointerDown=false;
+
+      /*
+        Save gesture state before reset.
+      */
+
+      const wasSwipe=
+        isSwipeGesture;
+
+      /*
+        Reset bubble position.
+      */
+
+      bubble.style.transform=
+        "translateX(0px)";
 
 
-    if (isMe) {
-
-      const tickClass =
-        msg.read
-          ? "tick read"
-          : "tick";
-
-
-      const tickText =
-        msg.read
-          ? "✓✓"
-          : "✓";
+      try{
+        bubble.releasePointerCapture(
+          e.pointerId
+        );
+      }catch(err){}
 
 
-      tickHtml =
-        `<span
-          id="tick-${msgId}"
-          class="${tickClass}"
-        >${tickText}</span>`;
+      /*
+        Swipe should NEVER become
+        a double-tap.
+      */
+
+      if(wasSwipe){
+
+        lastTap=0;
+
+        setTimeout(
+          ()=>{
+            isSwipeGesture=false;
+            swipeActivated=false;
+          },
+          50
+        );
+
+        return;
+
+      }
+
+
+      /*
+        Normal tap / double tap
+        reaction system.
+      */
+
+      const now=
+        Date.now();
+
+      if(
+        now-lastTap<
+        320
+      ){
+
+        openReactionBar(
+          bubble,
+          message
+        );
+
+        lastTap=0;
+
+      }else{
+
+        lastTap=now;
+
+      }
+
+    }
+  );
+
+
+  /* =====================================================
+     POINTER CANCEL
+  ===================================================== */
+
+  bubble.addEventListener(
+    "pointercancel",
+    function(){
+
+      isPointerDown=false;
+
+      isSwipeGesture=false;
+      swipeActivated=false;
+
+      bubble.style.transform=
+        "translateX(0px)";
+
+    }
+  );
+
+
+  row.appendChild(
+    bubble
+  );
+
+  container.appendChild(
+    row
+  );
+
+
+  /*
+    Only new message goes
+    to bottom.
+  */
+
+  container.scrollTop=
+    container.scrollHeight;
+
+}
+
+
+/* =========================================================
+   SCROLL TO ORIGINAL MESSAGE
+========================================================= */
+
+function scrollToOriginalMessage(
+  messageId
+){
+
+  if(!messageId)return;
+
+  const target=
+    document.querySelector(
+      '.message-row[data-id="'+
+      messageId+
+      '"]'
+    );
+
+  if(!target){
+
+    showToast(
+      "Original message available nahi hai"
+    );
+
+    return;
+
+  }
+
+  target.scrollIntoView({
+    behavior:"auto",
+    block:"center"
+  });
+
+
+  /*
+    Temporary visual indication.
+  */
+
+  const bubble=
+    target.querySelector(
+      ".message-bubble"
+    );
+
+  if(!bubble)return;
+
+  const oldBorder=
+    bubble.style.borderColor;
+
+  bubble.style.borderColor=
+    "var(--cyan)";
+
+  setTimeout(
+    ()=>{
+      bubble.style.borderColor=
+        oldBorder;
+    },
+    900
+  );
+
+}
+
+
+/* =========================================================
+   REACTION BAR
+========================================================= */
+
+function openReactionBar(
+  bubble,
+  message
+){
+
+  document
+    .querySelectorAll(
+      ".reaction-bar"
+    )
+    .forEach(
+      el=>el.remove()
+    );
+
+  const bar=
+    document.createElement(
+      "div"
+    );
+
+  bar.className=
+    "reaction-bar";
+
+  [
+    "❤️",
+    "😂",
+    "👍",
+    "😮",
+    "🔥"
+  ].forEach(
+    emoji=>{
+
+      const button=
+        document.createElement(
+          "button"
+        );
+
+      button.textContent=
+        emoji;
+
+      button.onclick=
+        function(e){
+
+          e.stopPropagation();
+
+          roomRef
+            .child("messages")
+            .child(message.id)
+            .update({
+
+              reaction:emoji
+
+            });
+
+          bar.remove();
+
+        };
+
+      bar.appendChild(
+        button
+      );
+
+    }
+  );
+
+  bubble.appendChild(
+    bar
+  );
+
+  setTimeout(
+    ()=>{
+      if(bar.parentNode){
+        bar.remove();
+      }
+    },
+    4000
+  );
+
+}
+
+
+/* =========================================================
+   REACTION BADGE
+========================================================= */
+
+function addReactionBadge(
+  bubble,
+  emoji
+){
+
+  const old=
+    bubble.querySelector(
+      ".reaction-badge"
+    );
+
+  if(old)old.remove();
+
+  const badge=
+    document.createElement(
+      "div"
+    );
+
+  badge.className=
+    "reaction-badge";
+
+  badge.textContent=
+    emoji;
+
+  bubble.appendChild(
+    badge
+  );
+
+}
+
+
+/* =========================================================
+   UPDATE SINGLE MESSAGE
+========================================================= */
+
+function updateSingleMessage(
+  updated
+){
+
+  const row=
+    document.querySelector(
+      '.message-row[data-id="'+
+      updated.id+
+      '"]'
+    );
+
+  if(!row)return;
+
+  const bubble=
+    row.querySelector(
+      ".message-bubble"
+    );
+
+  if(!bubble)return;
+
+
+  /*
+    Reaction update
+  */
+
+  const oldReaction=
+    bubble.querySelector(
+      ".reaction-badge"
+    );
+
+  if(updated.reaction){
+
+    addReactionBadge(
+      bubble,
+      updated.reaction
+    );
+
+  }else if(oldReaction){
+
+    oldReaction.remove();
+
+  }
+
+
+  /*
+    Read tick update
+  */
+
+  if(updated.sender===myUser){
+
+    const tick=
+      bubble.querySelector(
+        '[data-tick="true"]'
+      );
+
+    if(tick){
+
+      tick.textContent=
+        updated.read
+          ?"✓✓"
+          :"✓";
+
+      tick.classList.toggle(
+        "read",
+        !!updated.read
+      );
 
     }
 
+  }
 
-    msgDiv.innerHTML = `
-      <div>
-        ${escapeHtml(msg.text)}
-        <span style="white-space: nowrap;">
-          ${timeHtml}
-          ${tickHtml}
-        </span>
+}
+
+
+/* =========================================================
+   TIME
+========================================================= */
+
+function formatTime(timestamp){
+
+  if(!timestamp)return"";
+
+  return new Date(
+    timestamp
+  ).toLocaleTimeString(
+    [],
+    {
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+/* =========================================================
+   EMOJI
+========================================================= */
+
+function addEmoji(){
+
+  const input=
+    document.getElementById(
+      "messageInput"
+    );
+
+  input.value+=
+    " 😊";
+
+  input.focus();
+
+}
+
+
+/* =========================================================
+   GIFTS
+========================================================= */
+
+function openGift(){
+
+  document
+    .getElementById(
+      "giftModal"
+    )
+    .classList
+    .remove("hidden");
+
+}
+
+
+function sendGift(
+  icon,
+  text
+){
+
+  roomRef
+    .child("messages")
+    .push({
+
+      sender:myUser,
+
+      text:text,
+
+      gift:icon,
+
+      type:"gift",
+
+      read:false,
+
+      timestamp:Date.now(),
+
+      reaction:"",
+
+      replyTo:
+        replyTo
+          ?{
+              id:replyTo.id,
+              sender:replyTo.sender,
+              text:replyTo.text
+            }
+          :null
+
+    })
+    .then(()=>{
+
+      cancelReply();
+
+    });
+
+  closeModal(
+    "giftModal"
+  );
+
+  showToast(
+    "Gift sent "+icon
+  );
+
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+function openSearch(){
+
+  document
+    .getElementById(
+      "searchModal"
+    )
+    .classList
+    .remove("hidden");
+
+  document
+    .getElementById(
+      "searchInput"
+    )
+    .focus();
+
+}
+
+
+function searchMessages(){
+
+  const query=
+    document
+      .getElementById(
+        "searchInput"
+      )
+      .value
+      .trim()
+      .toLowerCase();
+
+  const result=
+    document.getElementById(
+      "searchResults"
+    );
+
+  result.innerHTML="";
+
+  if(!query){
+
+    result.innerHTML=`
+      <div style="
+        color:var(--muted);
+        font-size:11px;
+        margin-top:12px;
+      ">
+        Type something to search...
       </div>
     `;
 
+    return;
 
-    chatBox.appendChild(
-      msgDiv
+  }
+
+  const found=
+    messages.filter(
+      message=>
+        String(
+          message.text||""
+        )
+        .toLowerCase()
+        .includes(query)
     );
 
+  if(!found.length){
 
-    chatBox.scrollTop =
-      chatBox.scrollHeight;
+    result.innerHTML=`
+      <div style="
+        color:var(--muted);
+        font-size:11px;
+        margin-top:12px;
+      ">
+        No messages found.
+      </div>
+    `;
+
+    return;
 
   }
 
+  found.forEach(
+    message=>{
 
-  /* ================================
-     SECURITY
-  ================================= */
+      const item=
+        document.createElement(
+          "div"
+        );
 
-  function escapeHtml(text) {
+      item.className=
+        "search-result";
 
-    const div =
-      document.createElement(
-        "div"
+      const name=
+        document.createElement(
+          "div"
+        );
+
+      name.className=
+        "search-result-name";
+
+      name.textContent=
+        message.sender;
+
+      const text=
+        document.createElement(
+          "div"
+        );
+
+      text.className=
+        "search-result-text";
+
+      text.textContent=
+        message.text||"";
+
+      item.appendChild(
+        name
       );
 
-    div.textContent =
-      text || "";
+      item.appendChild(
+        text
+      );
 
-    return div.innerHTML;
+      item.onclick=()=>{
+        closeModal(
+          "searchModal"
+        );
+
+        scrollToOriginalMessage(
+          message.id
+        );
+      };
+
+      result.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+function openDashboard(){
+
+  updateDashboard();
+
+  document
+    .getElementById(
+      "dashboardModal"
+    )
+    .classList
+    .remove("hidden");
+
+}
+
+
+function updateDashboard(){
+
+  document
+    .getElementById(
+      "totalMessages"
+    )
+    .textContent=
+    messages.length;
+
+  document
+    .getElementById(
+      "reactionCount"
+    )
+    .textContent=
+    messages.filter(
+      m=>!!m.reaction
+    ).length;
+
+  const milestones=[
+    10,
+    50,
+    100,
+    250,
+    500,
+    1000
+  ];
+
+  document
+    .getElementById(
+      "milestoneCount"
+    )
+    .textContent=
+    milestones.filter(
+      n=>messages.length>=n
+    ).length;
+
+  document
+    .getElementById(
+      "streakValue"
+    )
+    .textContent=
+    calculateStreak();
+
+  updateOnThisDay();
+
+}
+
+
+function calculateStreak(){
+
+  const days=
+    new Set();
+
+  messages.forEach(
+    message=>{
+
+      if(!message.timestamp)
+        return;
+
+      const d=
+        new Date(
+          message.timestamp
+        );
+
+      days.add(
+        d.getFullYear()+
+        "-"+
+        d.getMonth()+
+        "-"+
+        d.getDate()
+      );
+
+    }
+  );
+
+  let streak=0;
+
+  const today=
+    new Date();
+
+  while(true){
+
+    const key=
+      today.getFullYear()+
+      "-"+
+      today.getMonth()+
+      "-"+
+      today.getDate();
+
+    if(!days.has(key))
+      break;
+
+    streak++;
+
+    today.setDate(
+      today.getDate()-1
+    );
 
   }
+
+  return streak;
+
+}
+
+
+function updateOnThisDay(){
+
+  const box=
+    document.getElementById(
+      "onThisDay"
+    );
+
+  const now=
+    new Date();
+
+  const old=
+    messages.filter(
+      message=>{
+
+        if(!message.timestamp)
+          return false;
+
+        const date=
+          new Date(
+            message.timestamp
+          );
+
+        return(
+          date.getDate()===
+            now.getDate()&&
+          date.getMonth()===
+            now.getMonth()&&
+          date.getFullYear()!==
+            now.getFullYear()
+        );
+
+      }
+    );
+
+  if(!old.length){
+
+    box.textContent=
+      "No old memories yet. ✨";
+
+    return;
+
+  }
+
+  box.innerHTML="";
+
+  old.slice(-3)
+    .forEach(
+      message=>{
+
+        const div=
+          document.createElement(
+            "div"
+          );
+
+        div.style.marginBottom=
+          "8px";
+
+        const name=
+          document.createElement(
+            "b"
+          );
+
+        name.textContent=
+          message.sender;
+
+        const text=
+          document.createElement(
+            "div"
+          );
+
+        text.style.fontSize=
+          "11px";
+
+        text.style.marginTop=
+          "3px";
+
+        text.textContent=
+          message.text||"";
+
+        div.appendChild(
+          name
+        );
+
+        div.appendChild(
+          text
+        );
+
+        box.appendChild(
+          div
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   MOOD
+========================================================= */
+
+function setMood(mood){
+
+  currentMood=mood;
+
+  localStorage.setItem(
+    "nikAimMood",
+    mood
+  );
+
+  if(
+    roomRef&&
+    myUser
+  ){
+
+    roomRef
+      .child("users")
+      .child(myUser)
+      .update({
+
+        mood:mood,
+
+        lastSeen:
+          firebase
+            .database
+            .ServerValue
+            .TIMESTAMP
+
+      });
+
+  }
+
+  if(
+    profileShowingUser===
+    myUser
+  ){
+
+    renderProfile(
+      myUser,
+      {
+        online:true,
+        mood:mood
+      }
+    );
+
+  }
+
+  showToast(
+    "Mood changed "+
+    mood
+  );
+
+}
+
+
+/* =========================================================
+   ROOM CODE
+========================================================= */
+
+function openRoomCode(){
+
+  document
+    .getElementById(
+      "roomCode"
+    )
+    .textContent=
+    roomId;
+
+  document
+    .getElementById(
+      "roomModal"
+    )
+    .classList
+    .remove("hidden");
+
+}
+
+
+function copyRoomCode(){
+
+  if(navigator.clipboard){
+
+    navigator.clipboard
+      .writeText(roomId)
+      .then(
+        ()=>{
+          showToast(
+            "Room code copied 📋"
+          );
+        }
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+function openSettings(){
+
+  renderThemes();
+
+  document
+    .getElementById(
+      "settingsModal"
+    )
+    .classList
+    .remove("hidden");
+
+}
+
+
+function toggleLight(){
+
+  document.body
+    .classList
+    .toggle("light");
+
+  const enabled=
+    document.body
+      .classList
+      .contains("light");
+
+  localStorage.setItem(
+    "nikAimLight",
+    enabled
+  );
+
+  document
+    .getElementById(
+      "lightSwitch"
+    )
+    .classList
+    .toggle(
+      "on",
+      enabled
+    );
+
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+function closeModal(id){
+
+  document
+    .getElementById(id)
+    .classList
+    .add("hidden");
+
+}
+
+
+function closeOutside(
+  event,
+  id
+){
+
+  if(
+    event.target.id===id
+  ){
+
+    closeModal(id);
+
+  }
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+let toastTimer;
+
+
+function showToast(text){
+
+  const toast=
+    document.getElementById(
+      "toast"
+    );
+
+  toast.textContent=
+    text;
+
+  toast.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    toastTimer
+  );
+
+  toastTimer=
+    setTimeout(
+      ()=>{
+        toast.classList.remove(
+          "show"
+        );
+      },
+      1800
+    );
+
+}
+
+
+/* =========================================================
+   INITIAL SETTINGS
+========================================================= */
+
+applyTheme(
+  currentTheme
+);
+
+
+const savedName=
+  localStorage.getItem(
+    "nikAimName"
+  );
+
+if(savedName){
+
+  document
+    .getElementById(
+      "username"
+    )
+    .value=
+    savedName;
+
+  document
+    .getElementById(
+      "previewName"
+    )
+    .textContent=
+    savedName;
+
+  document
+    .getElementById(
+      "previewAvatar"
+    )
+    .textContent=
+    savedName
+      .charAt(0)
+      .toUpperCase();
+
+}
+
+
+if(
+  localStorage.getItem(
+    "nikAimLight"
+  )===
+  "true"
+){
+
+  document.body
+    .classList
+    .add("light");
+
+  document
+    .getElementById(
+      "lightSwitch"
+    )
+    .classList
+    .add("on");
+
+}
+
+
+/* =========================================================
+   VISIBILITY
+========================================================= */
+
+document.addEventListener(
+  "visibilitychange",
+  function(){
+
+    if(
+      document.visibilityState===
+      "visible"&&
+      roomRef&&
+      myUser
+    ){
+
+      roomRef
+        .child("users")
+        .child(myUser)
+        .update({
+
+          online:true,
+
+          mood:currentMood,
+
+          lastSeen:
+            firebase
+              .database
+              .ServerValue
+              .TIMESTAMP
+
+        });
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   BEFORE LEAVE
+========================================================= */
+
+window.addEventListener(
+  "beforeunload",
+  function(){
+
+    stopTyping();
+
+  }
+);
 
 </script>
 
