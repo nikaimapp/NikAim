@@ -234,8 +234,8 @@
       roomRef.child("messages").push({
         sender: myUser,
         text: text,
-        timestamp: Date.now(), 
         read: false,
+        timestamp: Date.now()
       });
 
       triggerPushNotification(text);
@@ -277,12 +277,6 @@
   }
 
   function displayMessage(msgId, msg) {
-    const time = msg.timestamp
-  ? new Date(msg.timestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    })
-  : "";
     const chatBox = document.getElementById("chat-box");
     const isMe = msg.sender === myUser;
     
@@ -296,7 +290,7 @@
       tickHtml = `<span id="tick-${msgId}" class="${tickClass}">${tickText}</span>`;
     }
 
-    msgDiv.innerHTML = `<div>${msg.text} <span class="time">${time}</span> ${tickHtml}</div>`;
+    msgDiv.innerHTML = `<div>${msg.text} ${tickHtml}</div>`;
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
@@ -304,3 +298,4 @@
 
 </body>
 </html>
+
