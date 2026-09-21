@@ -115,7 +115,6 @@
       font-weight: bold;
     }
 
-    /* MESSAGE TIME */
     .message-time {
       font-size: 10px;
       color: #777;
@@ -127,6 +126,21 @@
     #status-bar {
       font-size: 14px;
       color: #075e54;
+      font-weight: bold;
+    }
+
+    /* TYPING INDICATOR */
+    #typing-indicator {
+      display: none;
+      font-size: 12px;
+      color: #075e54;
+      font-style: italic;
+      padding: 4px 15px;
+      background: rgba(255, 255, 255, 0.88);
+      flex-shrink: 0;
+    }
+
+    #typing-user {
       font-weight: bold;
     }
 
@@ -272,6 +286,12 @@
     <div id="chat-box"></div>
 
 
+    <!-- TYPING INDICATOR -->
+    <div id="typing-indicator">
+      <span id="typing-user"></span> is typing...
+    </div>
+
+
     <div class="input-container">
 
       <input
@@ -380,6 +400,8 @@
   let myUser = "";
   let roomId = "";
   let roomRef;
+
+  let typingTimeout;
 
 
   /* ================================
@@ -591,6 +613,8 @@
 
     setupPushNotifications();
 
+    setupTypingIndicator();
+
 
     /* ONLINE / OFFLINE */
 
@@ -635,6 +659,17 @@
         myStatusRef.set(
           "offline"
         );
+
+        if (roomRef && myUser) {
+
+          roomRef
+            .child("typing/" + myUser)
+            .set({
+              typing: false,
+              name: myUser
+            });
+
+        }
 
       }
     );
@@ -799,6 +834,161 @@
 
 
   /* ================================
+     TYPING INDICATOR
+  ================================= */
+
+  function setupTypingIndicator() {
+
+    const input =
+      document.getElementById(
+        "msg-input"
+      );
+
+
+    if (!input || !roomRef) {
+      return;
+    }
+
+
+    input.addEventListener(
+      "input",
+      function() {
+
+        if (!roomRef || !myUser) {
+          return;
+        }
+
+
+        const isTyping =
+          input.value.trim().length > 0;
+
+
+        roomRef
+          .child(
+            "typing/" +
+            myUser
+          )
+          .set({
+
+            typing:
+              isTyping,
+
+            name:
+              myUser
+
+          });
+
+
+        clearTimeout(
+          typingTimeout
+        );
+
+
+        if (isTyping) {
+
+          typingTimeout =
+            setTimeout(
+              function() {
+
+                roomRef
+                  .child(
+                    "typing/" +
+                    myUser
+                  )
+                  .set({
+
+                    typing:
+                      false,
+
+                    name:
+                      myUser
+
+                  });
+
+              },
+              1500
+            );
+
+        }
+
+      }
+    );
+
+
+    /* LISTEN FOR OTHER USER TYPING */
+
+    roomRef
+      .child("typing")
+      .on(
+        "value",
+        function(snapshot) {
+
+          const typingUsers =
+            snapshot.val() || {};
+
+
+          let otherTypingUser =
+            "";
+
+
+          Object.keys(typingUsers)
+            .forEach(
+              function(user) {
+
+                if (
+                  user !== myUser &&
+                  typingUsers[user] &&
+                  typingUsers[user].typing === true
+                ) {
+
+                  otherTypingUser =
+                    typingUsers[user].name ||
+                    user;
+
+                }
+
+              }
+            );
+
+
+          const indicator =
+            document.getElementById(
+              "typing-indicator"
+            );
+
+
+          const username =
+            document.getElementById(
+              "typing-user"
+            );
+
+
+          if (
+            otherTypingUser
+          ) {
+
+            username.innerText =
+              otherTypingUser;
+
+            indicator.style.display =
+              "block";
+
+          }
+
+          else {
+
+            indicator.style.display =
+              "none";
+
+          }
+
+        }
+      );
+
+  }
+
+
+  /* ================================
      ENTER KEY
   ================================= */
 
@@ -844,11 +1034,6 @@
           read:
             false,
 
-          /*
-             IMPORTANT:
-             Message timestamp
-          */
-
           timestamp:
             Date.now()
 
@@ -857,6 +1042,29 @@
 
       triggerPushNotification(
         text
+      );
+
+
+      /* STOP TYPING */
+
+      roomRef
+        .child(
+          "typing/" +
+          myUser
+        )
+        .set({
+
+          typing:
+            false,
+
+          name:
+            myUser
+
+        });
+
+
+      clearTimeout(
+        typingTimeout
       );
 
 
@@ -876,7 +1084,7 @@
   ) {
 
     const serverKey =
-      "BJWYh7mvIcBFgk3eopYbwyzFWXTEKNHMzqKSephdLfC_scW2fdyEpFwZpnRFpNTQYBbYXHYq6ZshPchnjvVrStU";
+      "BJWYhY7mvIcBFgk3eopYbwyzFWXTEKNHMzqKSephdLfC_scW2fdyEpFwZpnRFpNTQYBbYXHYq6ZshPchnjvVrStU";
 
 
     if (
@@ -1003,10 +1211,6 @@
       }`;
 
 
-    /* ============================
-       MESSAGE TIME
-    ============================ */
-
     let timeHtml = "";
 
 
@@ -1067,10 +1271,6 @@
     }
 
 
-    /* ============================
-       READ TICKS
-    ============================ */
-
     let tickHtml = "";
 
 
@@ -1097,10 +1297,6 @@
     }
 
 
-    /* ============================
-       FINAL MESSAGE HTML
-    ============================ */
-
     msgDiv.innerHTML = `
       <div>
         ${escapeHtml(msg.text)}
@@ -1124,8 +1320,7 @@
 
 
   /* ================================
-     SECURITY:
-     ESCAPE MESSAGE TEXT
+     SECURITY
   ================================= */
 
   function escapeHtml(text) {
